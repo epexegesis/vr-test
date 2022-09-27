@@ -5,7 +5,8 @@ public interface IVideoChatClient
 {
     void Join(string channel);
     void Leave();
-    void LoadEngine(string appId);
+    void LoadEngine(string appId, string token);
+    void SetupUI();
     void UnloadEngine();
     void OnSceneLoaded();
     void EnableVideo(bool enable);

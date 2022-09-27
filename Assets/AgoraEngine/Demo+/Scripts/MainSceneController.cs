@@ -36,9 +36,38 @@ public class MainSceneController : MonoBehaviour
     // Get your own App ID at https://dashboard.agora.io/
     [Header("Agora Properties")]
     [SerializeField]
-    private string AppID = "3cdcb70159df4d81942036df11cdd67b";
+    private string AppID = "dd287741ae8845f489ab4c99cc91aa91";
     [SerializeField]
     private string channelName;
+    [SerializeField]
+    private string token = "";
+
+    [Header("Photon Related")]
+    [SerializeField]
+    GameObject loadingScreen;
+    [SerializeField]
+    GameObject startScreen;
+
+    [Header("UI")]
+    [SerializeField] GameObject modUI;
+    [SerializeField] GameObject guestUI;
+
+    public enum UserChoice
+    {
+        Default,
+        Traditional,
+        VR
+    }
+
+    public enum UserType
+    {
+        Default,
+        Mod,
+        Guest
+    }
+
+    public UserChoice userChoice;
+    public UserType userType;
 
     private bool _initialized = false;
 
@@ -56,13 +85,31 @@ public class MainSceneController : MonoBehaviour
     void Start()
     {
         CheckAppId();
+        //ConnectToServer();
     }
 
     void Update()
     {
         CheckPermissions();
-        CheckExit();
+
     }
+
+    public int GetChoice()
+    {
+        if (userChoice == UserChoice.Traditional)
+            return 0;
+        else
+            return 1;
+    }
+
+    public bool IsMod()
+    {
+        if (userType == UserType.Mod)
+            return true;
+        else
+            return false;
+    }
+
 
     private void CheckAppId()
     {
@@ -111,34 +158,7 @@ public class MainSceneController : MonoBehaviour
     //        PlayerPrefs.Save();
     //    }
     //}
-
-    //bool _echoTesting = false;
-    //Button EchoButton;
-    //int EchoRecordSecs = 2;
-    //void SetupEchoTest()
-    //{
-    //    EchoButton = GameObject.Find("EchoButton").GetComponent<Button>();
-    //    EchoButton.onClick.AddListener(() => {
-    //        var engine = IRtcEngine.QueryEngine();
-    //        if (engine != null)
-    //        {
-    //            if (_echoTesting) {
-    //                engine.StopEchoTest();
-    //                EchoButton.GetComponentInChildren<Text>().text = "Test Echo";
-    //                SetAppIdText();
-    //                _echoTesting = false;
-    //            }
-    //            else {
-    //                _echoTesting = true;
-    //                EchoButton.GetComponentInChildren<Text>().text = "Stop Echo";
-    //                engine.StartEchoTest(EchoRecordSecs);
-    //                StartCoroutine(EchoTestHint());
-		  //      }
-    //        }
-	   // }); 
-    //}
-
-    
+  
 
     public void HandleSceneButtonClick(int sceneEnum)
     {
@@ -146,6 +166,7 @@ public class MainSceneController : MonoBehaviour
         TestSceneEnum scenename = (TestSceneEnum)sceneEnum;
         string sceneFileName = string.Format("{0}Scene", scenename.ToString());
         string channelName = this.channelName;
+        //string token = this.token;
 
         if (string.IsNullOrEmpty(channelName))
         {
@@ -159,47 +180,32 @@ public class MainSceneController : MonoBehaviour
             return;
         }
 
-     //   if (_echoTesting)
-     //   {
-     //       Debug.LogWarning("Echo test is running!");
-     //       return;
-	    //}
-
         switch (scenename)
         {
-            //case TestSceneEnum.AppScreenShare:
-            //    app = new TestAppScreenShare();
-            //    break;
             case TestSceneEnum.DesktopScreenShare:
                 app = new DesktopScreenShare(); // create app
                 break;
-            //case TestSceneEnum.Transcoding:
-            //    app = new TranscodingApp();
-            //    break;
-            //case TestSceneEnum.One2One:
-            //    if (roleToggle.isOn)
-            //    {
-            //        // live streaming mode as audience
-            //        app = new AudienceClientApp();
-            //    }
-            //    else
-            //    {
-            //        // Communication mode
-            //        app = new One2OneApp();
-            //    }
-            //    break;
         }
 
         if (app == null) return;
 
         app.OnViewControllerFinish += OnViewControllerFinish;
         // load engine
-        app.LoadEngine(AppID);
+        app.LoadEngine(AppID, token);
         // join channel and jump to next scene
         app.Join(channelName);
         //SaveChannelName();
         SceneManager.sceneLoaded += OnLevelFinishedLoading; // configure GameObject after scene is loaded
         SceneManager.LoadScene(sceneFileName, LoadSceneMode.Single);
+    }
+
+
+    public void InstantiateUI()
+    {
+        if (userType == UserType.Mod)
+            Instantiate(modUI);
+        if (userType == UserType.Guest)
+            Instantiate(guestUI);
     }
 
     void ShowVersion()
@@ -301,10 +307,8 @@ public class MainSceneController : MonoBehaviour
         IRtcEngine.Destroy();
     }
 
-    void CheckExit()
+    void Exit()
     {
-        if (Input.GetKeyUp(KeyCode.Escape))
-        {
 
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -312,7 +316,7 @@ public class MainSceneController : MonoBehaviour
             // Gracefully quit on OS like Android, so OnApplicationQuit() is called
             Application.Quit();
 #endif
-        }
+
     }
 
     /// <summary>

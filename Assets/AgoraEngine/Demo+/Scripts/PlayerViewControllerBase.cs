@@ -20,10 +20,16 @@ public class PlayerViewControllerBase : IVideoChatClient
     //#endif
     protected bool remoteUserJoined = false;
     protected bool _enforcing360p = false; // the local view of the remote user resolution
+    private string token;
 
     public PlayerViewControllerBase()
     {
         // Constructor, nothing to do for base
+    }
+
+    public virtual void RefreshUI()
+    {
+
     }
 
     /// <summary>
@@ -48,7 +54,7 @@ public class PlayerViewControllerBase : IVideoChatClient
         PrepareToJoin();
 
         // join channel
-        mRtcEngine.JoinChannel(channel, null, 0);
+        mRtcEngine.JoinChannelByKey(channelKey: token, channelName: channel);
 
         Debug.Log("initializeEngine done");
     }
@@ -82,7 +88,7 @@ public class PlayerViewControllerBase : IVideoChatClient
 
     protected bool MicMuted { get; set; }
 
-    protected virtual void SetupUI()
+    public virtual void SetupUI()
     {
         GameObject go = GameObject.Find(SelfVideoName);
         if (go != null)
@@ -97,18 +103,18 @@ public class PlayerViewControllerBase : IVideoChatClient
             button.onClick.AddListener(OnLeaveButtonClicked);
         }
 
-        //Button mutton = GameObject.Find("MuteButton").GetComponent<Button>();
-        //if (mutton != null)
-        //{
-        //    mutton.onClick.AddListener(() =>
-        //    {
-        //        MicMuted = !MicMuted;
-        //        mRtcEngine.EnableLocalAudio(!MicMuted);
-        //        mRtcEngine.MuteLocalAudioStream(MicMuted);
-        //        Text text = mutton.GetComponentInChildren<Text>();
-        //        text.text = MicMuted ? "Unmute" : "Mute";
-        //    });
-        //}
+        Button mutton = GameObject.Find("MuteButton").GetComponent<Button>();
+        if (mutton != null)
+        {
+            mutton.onClick.AddListener(() =>
+            {
+                MicMuted = !MicMuted;
+                mRtcEngine.EnableLocalAudio(!MicMuted);
+                mRtcEngine.MuteLocalAudioStream(MicMuted);
+                Text text = mutton.GetComponentInChildren<Text>();
+                text.text = MicMuted ? "Unmute" : "Mute";
+            });
+        }
 
         go = GameObject.Find("ToggleScale");
         if (go != null)
@@ -133,27 +139,27 @@ public class PlayerViewControllerBase : IVideoChatClient
         }
     }
 
-    protected virtual void OnVideoSizeChanged(uint uid, int width, int height, int rotation)
-    {
-        Debug.LogWarningFormat("uid:{3} OnVideoSizeChanged width = {0} height = {1} for rotation:{2}", width, height, rotation, uid);
+    //protected virtual void OnVideoSizeChanged(uint uid, int width, int height, int rotation)
+    //{
+    //    Debug.LogWarningFormat("uid:{3} OnVideoSizeChanged width = {0} height = {1} for rotation:{2}", width, height, rotation, uid);
          
-        if (UserVideoDict.ContainsKey(uid))
-        {
-            GameObject go = UserVideoDict[uid].gameObject;
-            Vector2 v2 = new Vector2(width, height);
-            RawImage image = go.GetComponent<RawImage>();
-            if (_enforcing360p)
-            {
-                v2 = AgoraUIUtils.GetScaledDimension(width, height, 240f);
-            }
+    //    if (UserVideoDict.ContainsKey(uid))
+    //    {
+    //        GameObject go = UserVideoDict[uid].gameObject;
+    //        Vector2 v2 = new Vector2(width, height);
+    //        RawImage image = go.GetComponent<RawImage>();
+    //        if (_enforcing360p)
+    //        {
+    //            v2 = AgoraUIUtils.GetScaledDimension(width, height, 240f);
+    //        }
 
-            if (IsPortraitOrientation(rotation))
-            {
-                v2 = new Vector2(v2.y, v2.x);
-            }
-            image.rectTransform.sizeDelta = v2;
-        }
-    }
+    //        if (IsPortraitOrientation(rotation))
+    //        {
+    //            v2 = new Vector2(v2.y, v2.x);
+    //        }
+    //        image.rectTransform.sizeDelta = v2;
+    //    }
+    //}
 
     bool IsPortraitOrientation(int rotation)
     {
@@ -164,10 +170,12 @@ public class PlayerViewControllerBase : IVideoChatClient
     ///   Load the Agora RTC engine with given AppID
     /// </summary>
     /// <param name="appId">Get the APP ID from Agora account</param>
-    public void LoadEngine(string appId)
+    public void LoadEngine(string appId, string token = null)
     {
         // init engine
         mRtcEngine = IRtcEngine.GetEngine(appId);
+
+        this.token = token;
 
         mRtcEngine.OnError = (code, msg) =>
         {
@@ -218,6 +226,8 @@ public class PlayerViewControllerBase : IVideoChatClient
 
     public virtual void OnSceneLoaded()
     {
+
+        GameObject.Find("GameController").GetComponent<MainSceneController>().InstantiateUI();
         SetupUI();
     }
 
@@ -233,27 +243,27 @@ public class PlayerViewControllerBase : IVideoChatClient
     {
         Debug.Log("onUserJoined: uid = " + uid + " elapsed = " + elapsed);
 
-        // find a game object to render video stream from 'uid'
-        GameObject go = GameObject.Find(uid.ToString());
-        if (!ReferenceEquals(go, null))
-        {
-            return; // reuse
-        }
+        //// find a game object to render video stream from 'uid'
+        //GameObject go = GameObject.Find(uid.ToString());
+        //if (!ReferenceEquals(go, null))
+        //{
+        //    return; // reuse
+        //}
 
-        // create a GameObject and assign to this new user
-        VideoSurface videoSurface = makeImageSurface(uid.ToString());
-        if (!ReferenceEquals(videoSurface, null))
-        {
-            // configure videoSurface
-            videoSurface.SetForUser(uid);
-            videoSurface.SetEnable(true);
-            videoSurface.SetVideoSurfaceType(AgoraVideoSurfaceType.Renderer);
-            videoSurface.SetGameFps(60);
-            videoSurface.EnableFilpTextureApply(enableFlipHorizontal: true, enableFlipVertical: false);
-            UserVideoDict[uid] = videoSurface;
-            Vector2 pos = AgoraUIUtils.GetRandomPosition(100);
-            videoSurface.transform.localPosition = new Vector3(pos.x, pos.y, 0);
-        }
+        //// create a GameObject and assign to this new user
+        //VideoSurface videoSurface = makeImageSurface(uid.ToString());
+        //if (!ReferenceEquals(videoSurface, null))
+        //{
+        //    // configure videoSurface
+        //    videoSurface.SetForUser(uid);
+        //    videoSurface.SetEnable(true);
+        //    videoSurface.SetVideoSurfaceType(AgoraVideoSurfaceType.Renderer);
+        //    videoSurface.SetGameFps(60);
+        //    videoSurface.EnableFilpTextureApply(enableFlipHorizontal: true, enableFlipVertical: false);
+        //    UserVideoDict[uid] = videoSurface;
+        //    Vector2 pos = AgoraUIUtils.GetRandomPosition(100);
+        //    videoSurface.transform.localPosition = new Vector3(pos.x, pos.y, 0);
+        //}
     }
 
     // When remote user is offline, this delegate will be called. Typically
@@ -271,36 +281,36 @@ public class PlayerViewControllerBase : IVideoChatClient
         }
     }
 
-    protected VideoSurface makeImageSurface(string goName)
-    {
-        GameObject go = new GameObject();
+    //protected VideoSurface makeImageSurface(string goName)
+    //{
+    //    GameObject go = new GameObject();
 
-        if (go == null)
-        {
-            return null;
-        }
+    //    if (go == null)
+    //    {
+    //        return null;
+    //    }
 
-        go.name = goName;
+    //    go.name = goName;
 
-        // to be renderered onto
-        RawImage image = go.AddComponent<RawImage>();
-        image.rectTransform.sizeDelta = new Vector2(1, 1);// make it almost invisible
+    //    // to be renderered onto
+    //    RawImage image = go.AddComponent<RawImage>();
+    //    image.rectTransform.sizeDelta = new Vector2(1, 1);// make it almost invisible
 
-        // make the object draggable
-        go.AddComponent<UIElementDragger>();
-        GameObject canvas = GameObject.Find("Canvas");
-        if (canvas != null)
-        {
-            go.transform.SetParent(canvas.transform);
-        }
-        // set up transform
-        go.transform.Rotate(0f, 0.0f, 180.0f);
-        Vector2 v2 = AgoraUIUtils.GetRandomPosition(200);
-        go.transform.position = new Vector3(v2.x, v2.y, 0);
-        go.transform.localScale = Vector3.one;
+    //    // make the object draggable
+    //    go.AddComponent<UIElementDragger>();
+    //    GameObject canvas = GameObject.Find("Canvas");
+    //    if (canvas != null)
+    //    {
+    //        go.transform.SetParent(canvas.transform);
+    //    }
+    //    // set up transform
+    //    go.transform.Rotate(0f, 0.0f, 180.0f);
+    //    Vector2 v2 = AgoraUIUtils.GetRandomPosition(200);
+    //    go.transform.position = new Vector3(v2.x, v2.y, 0);
+    //    go.transform.localScale = Vector3.one;
 
-        // configure videoSurface
-        VideoSurface videoSurface = go.AddComponent<VideoSurface>();
-        return videoSurface;
-    }
+    //    // configure videoSurface
+    //    VideoSurface videoSurface = go.AddComponent<VideoSurface>();
+    //    return videoSurface;
+    //}
 }

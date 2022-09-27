@@ -48,7 +48,7 @@ public class TranscodingApp : PlayerViewControllerBase
         mRtcEngine.OnStreamPublished = OnStreamPublished;
     }
 
-    protected override void SetupUI()
+    public override void SetupUI()
     {
         base.SetupUI();
         Button titleBtn = GameObject.Find("TitleButton").GetComponent<Button>();

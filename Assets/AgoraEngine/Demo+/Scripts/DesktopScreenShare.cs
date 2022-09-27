@@ -21,9 +21,9 @@ public class DesktopScreenShare : PlayerViewControllerBase
 #endif
     int CurrentDisplay = 0;
 
-    protected override void SetupUI()
+    public override void RefreshUI()
     {
-        base.SetupUI();
+        base.RefreshUI();
 
         Dropdown dropdown = GameObject.Find("Dropdown").GetComponent<Dropdown>();
         if (dropdown != null)
@@ -38,6 +38,9 @@ public class DesktopScreenShare : PlayerViewControllerBase
             }
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN
             // Monitor Display info
+
+            WinDisplays.Clear();
+
             var winDispInfoList = AgoraNativeBridge.GetWinDisplayInfo();
             if (winDispInfoList != null)
             {
@@ -47,6 +50,8 @@ public class DesktopScreenShare : PlayerViewControllerBase
                     WinDisplays.Add(dpInfo.MonitorInfo.monitor);
                 }
             }
+
+            dropdown.ClearOptions();
 
             // Window ID info
             Dictionary<string, System.IntPtr> winWinIdList;
@@ -60,24 +65,42 @@ public class DesktopScreenShare : PlayerViewControllerBase
 #endif
             WindowOptionDropdown = dropdown;
         }
+    }
 
-        Button button = GameObject.Find("ShareWindowButton").GetComponent<Button>();
-        if (button != null)
+    public override void SetupUI()
+    {
+        base.SetupUI();
+
+        if (GameObject.Find("GameController").GetComponent<MainSceneController>().IsMod())
         {
-            button.onClick.AddListener(OnShareWindowClick);
-        }
 
-        button = GameObject.Find("ShareDisplayButton").GetComponent<Button>();
-        if (button != null)
-        {
-            button.onClick.AddListener(ShareDisplayScreen);
-        }
+            RefreshUI();
 
-        //button = GameObject.Find("StopShareButton").GetComponent<Button>();
-        //if (button != null)
-        //{
-        //    button.onClick.AddListener(() => { mRtcEngine.StopScreenCapture(); });
-        //}
+            Button button = GameObject.Find("ShareWindowButton").GetComponent<Button>();
+            if (button != null)
+            {
+                button.onClick.AddListener(OnShareWindowClick);
+            }
+
+            button = GameObject.Find("ShareDisplayButton").GetComponent<Button>();
+            if (button != null)
+            {
+                button.onClick.AddListener(ShareDisplayScreen);
+            }
+
+            button = GameObject.Find("RefreshButton").GetComponent<Button>();
+            if (button != null)
+            {
+                button.onClick.AddListener(OnRefreshButtonClicked);
+            }
+
+            button = GameObject.Find("StopShareButton").GetComponent<Button>();
+            if (button != null)
+            {
+                button.onClick.AddListener(() => { mRtcEngine.StopScreenCapture(); });
+            }
+
+        }
 
         GameObject quad = GameObject.Find("DisplayPlane");
         if (ReferenceEquals(quad, null))
@@ -90,6 +113,12 @@ public class DesktopScreenShare : PlayerViewControllerBase
             quad.AddComponent<VideoSurface>();
         }
     }
+
+    void OnRefreshButtonClicked()
+    {
+        RefreshUI();
+    }
+
 
     void ShareDisplayScreen()
     {

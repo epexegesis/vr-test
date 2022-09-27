@@ -64,7 +64,7 @@ public class TestAppScreenShare : PlayerViewControllerBase
         StartSharing();
     }
 
-    protected override void SetupUI()
+    public override void SetupUI()
     {
         base.SetupUI();
         monoProxy = GameObject.Find("Canvas").GetComponent<MonoBehaviour>();
